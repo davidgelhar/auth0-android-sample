@@ -1,18 +1,22 @@
 package com.auth0.sample
 
 import android.os.Bundle
+import android.util.Log
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.view.isVisible
 import com.auth0.android.Auth0
 import com.auth0.android.authentication.AuthenticationAPIClient
 import com.auth0.android.authentication.AuthenticationException
 import com.auth0.android.callback.Callback
+import com.auth0.android.lock.AuthenticationCallback
 import com.auth0.android.management.ManagementException
 import com.auth0.android.management.UsersAPIClient
 import com.auth0.android.provider.WebAuthProvider
 import com.auth0.android.result.Credentials
 import com.auth0.android.result.UserProfile
 import com.auth0.sample.databinding.ActivityMainBinding
+import com.auth0.android.lock.*
+
 import com.google.android.material.snackbar.Snackbar
 
 class MainActivity : AppCompatActivity() {
@@ -34,7 +38,7 @@ class MainActivity : AppCompatActivity() {
         // Bind the button click with the login action
         binding = ActivityMainBinding.inflate(layoutInflater)
         setContentView(binding.root)
-        binding.buttonLogin.setOnClickListener { loginWithBrowser() }
+        binding.buttonLogin.setOnClickListener { loginWithLock() }
         binding.buttonLogout.setOnClickListener { logout() }
         binding.buttonGetMetadata.setOnClickListener { getUserMetadata() }
         binding.buttonPatchMetadata.setOnClickListener { patchUserMetadata() }
@@ -75,6 +79,34 @@ class MainActivity : AppCompatActivity() {
                     showUserProfile()
                 }
             })
+    }
+
+    private fun loginWithLock() {
+
+        var lock = Lock.newBuilder(account, callback)
+            .withScheme("demo")
+            // Customize Lock
+            .build(this)
+
+        startActivity(lock.newIntent(this))
+    }
+
+    // Callback from Lock
+    private val callback = object : AuthenticationCallback() {
+        override fun onAuthentication(credentials: Credentials) {
+            // Authenticated
+            cachedCredentials = credentials
+            showSnackBar("Success: ${credentials.accessToken}")
+            updateUI()
+            showUserProfile()
+
+        }
+
+        override fun onError(exception: AuthenticationException) {
+            // Exception occurred
+            showSnackBar("Failure: ${exception.getCode()}")
+
+        }
     }
 
     private fun logout() {
